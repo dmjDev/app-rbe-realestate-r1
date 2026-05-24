@@ -1,0 +1,39 @@
+{
+  "name": "nextjs-login-template",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "node",
+
+  // ¡Aquí está la magia! Esto ejecuta tus pasos 7 y 8 automáticamente
+  "postCreateCommand": "sudo chown -R node:node /workspaces/$(basename $(pwd)) && pnpm install && pnpm approve-builds --all",
+
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": [
+        // --- Formateo y Linting ---
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+
+        // --- Productividad y Código ---
+        "usernamehw.errorlens",
+        "dsznajder.es7-react-js-snippets",
+        "wix.vscode-import-cost",
+        "christian-kohler.path-intellisense",
+
+        // --- Tecnologías Específicas ---
+        "Prisma.prisma",
+        "bradlc.vscode-tailwindcss",
+
+        // --- Herramientas de API ---
+        "rangav.vscode-thunder-client",
+
+        // --- Contenedores y Docker ---
+        "ms-vscode-remote.remote-containers",
+        "ms-azuretools.vscode-docker",
+        "ms-azuretools.vscode-containers"
+      ]
+    }
+  }
+}

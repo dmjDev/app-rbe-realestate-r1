@@ -1,0 +1,16 @@
+
+_copy_*
+
+# Ignorar dependencias locales y builds previos
+node_modules/
+.next/
+.pnpm-store/
+dist/
+
+# Ignorar archivos de entorno
+.env*
+
+# Ignorar archivos de Git y configuración de editor
+.git
+.devcontainer
+README.md
