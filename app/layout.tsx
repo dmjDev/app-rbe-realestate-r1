@@ -11,10 +11,13 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth/auth";
 import { CleanUrlHandler } from "@/app/(client)/auth/components/CleanUrlHandler";
 
-import { DataProvider } from "@/providers/AuthProvider";
+import { AuthProvider } from "@/providers/AuthProvider";
+import { DataProvider } from "@/providers/DataProvider";
+import { ItemProvider } from "@/providers/ItemProvider";
 
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { getItemsSaved } from "./(client)/properties/controller/properties-controller";
 
 // Configuramos la fuente
 const albertSans = Albert_Sans({
@@ -83,6 +86,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth.api.getSession({ headers: await headers() });
+  const itemsSaved = session ? await getItemsSaved() : [];
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -93,13 +97,17 @@ export default async function RootLayout({
       <body
         className={`${albertSans.className} antialiased`} // ${geistSans.variable} ${geistMono.variable}
       >
-        <DataProvider userSession={session}>
-          <CleanUrlHandler />{" "}
-          {/* LIMPIAMOS LA URL UTILIZADA POR EL PROXI.TS QUE ASEGURA QUE NO QUEDE ABIERTA UNA SESION ANTERIOR EN EL NAVEGADOR */}
-          <Navigation />
-          {children}
-          <Footer session={session} />
-        </DataProvider>
+        <AuthProvider userSession={session}>
+          <DataProvider>
+            <ItemProvider initialItemsSaved={itemsSaved}>
+              <CleanUrlHandler />{" "}
+              {/* LIMPIAMOS LA URL UTILIZADA POR EL PROXI.TS QUE ASEGURA QUE NO QUEDE ABIERTA UNA SESION ANTERIOR EN EL NAVEGADOR */}
+              <Navigation />
+              {children}
+              <Footer session={session} />
+            </ItemProvider>
+          </DataProvider>
+        </AuthProvider>
       </body>
     </html>
   );

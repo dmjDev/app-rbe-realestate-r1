@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-
 interface ErrorComponentProps {
   error?: string | Error | null; // El error puede ser un texto, un objeto Error o venir vacío
   onRetry: () => void; // Una función que se ejecuta al hacer clic y no retorna nada
@@ -23,13 +21,7 @@ const ErrorComponent = ({ error, onRetry }: ErrorComponentProps) => {
       <div className="card-error-container bgsecondaryborder txtsecondary">
         <div className="error-content">
           <div className="error-icon">
-            <Image
-              src="/warning.webp"
-              alt="Warning Icon"
-              width={80}
-              height={80}
-              priority // Al ser una pantalla de error, queremos que cargue de inmediato
-            />
+            <img src="/warning.webp" alt="" />
           </div>
           <h3 className="error-title txterror">Something has gone wrong !</h3>
           <p className="error-message txtprimary">{errorMessage}</p>

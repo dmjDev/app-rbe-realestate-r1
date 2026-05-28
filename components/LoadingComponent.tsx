@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 
 const LoadingComponent = () => {
   const [mounted, setMounted] = useState(false);
@@ -22,13 +21,10 @@ const LoadingComponent = () => {
     >
       <div className="card-loading-container">
         <div className="loading-content">
-          <Image
-            src="/loading.webp"
+          <img
+            src="../loading.webp"
             alt="Loading..."
-            width={80}
-            height={80}
-            priority // Le da máxima prioridad de carga al ser un elemento de carga de interfaz
-            unoptimized
+            className="loading-spinner"
           />
           <p className="loading-text txtsecondaryfaded">Loading</p>
         </div>

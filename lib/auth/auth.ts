@@ -3,7 +3,7 @@ import { createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { customSession, emailOTP } from "better-auth/plugins"; // [VERIFICATION OTP]
-import prisma from '@/lib/prisma'
+import prisma from "@/lib/prisma";
 import nodemailer from "nodemailer"; // [VERIFICATION OTP]
 
 // TIPADO USERROL
@@ -18,6 +18,19 @@ function hasUserRol(user: unknown): user is UserWithRole {
     user !== null &&
     "userRol" in user &&
     typeof (user as Record<string, unknown>).userRol === "number"
+  );
+}
+
+interface UserWithUrlSearch {
+  urlSearch: string | null;
+}
+function hasUrlSearch(user: unknown): user is UserWithUrlSearch {
+  return (
+    typeof user === "object" &&
+    user !== null &&
+    "urlSearch" in user &&
+    (typeof (user as Record<string, unknown>).urlSearch === "string" ||
+      (user as Record<string, unknown>).urlSearch === null)
   );
 }
 
@@ -37,34 +50,37 @@ export const auth = betterAuth({
 
   session: {
     expiresIn: 28800, // 28800 -> 8 horas en segundos
-    updateAge: 3600,  // Actualiza la cookie cada hora si el usuario interactúa (en segundos)
+    updateAge: 3600, // Actualiza la cookie cada hora si el usuario interactúa (en segundos)
   },
 
   user: {
-    additionalFields: { // Utilizamos esta propiedad de betterAuth para añadir el campo userRol a los datos por defecto de session
+    additionalFields: {
+      // Utilizamos esta propiedad de betterAuth para añadir el campo userRol a los datos por defecto de session
       userRol: {
         type: "number",
         input: false, // No se puede enviar desde el formulario de registro
       },
-      // urlSearch: {
-      //   type: "string",
-      // },
+      urlSearch: {
+        type: "string",
+        input: false,
+        defaultValue: null, // Opcional, por si el usuario no tiene imagen
+      },
     },
   },
   emailAndPassword: {
     enabled: true,
     autoSignIn: false, // false -> evita que se creen los datos de sesión al registrarse o autenticarse con este método, por defecto es true
-    requireEmailVerification: true, // true -> obliga a verificar el email antes de crear la sesión, por defecto es false 
+    requireEmailVerification: true, // true -> obliga a verificar el email antes de crear la sesión, por defecto es false
   },
   socialProviders: {
     github: {
       clientId: process.env.GITHUB_CLIENT_ID as string,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET as string
+      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
     },
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string
-    }
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
   },
   hooks: {
     before: async (ctx: { path?: string; request?: Request }) => {
@@ -72,8 +88,9 @@ export const auth = betterAuth({
       let maxAttempts: number = 0;
       let lockDuration: number = 0;
 
-      if (path.includes('/email-otp') || path.includes('/sign-in/email')) {
-        const ip = ctx.request?.headers.get('x-forwarded-for') || '127.0.0.1' || '::1';
+      if (path.includes("/email-otp") || path.includes("/sign-in/email")) {
+        const ip =
+          ctx.request?.headers.get("x-forwarded-for") || "127.0.0.1" || "::1";
         const now = Date.now();
         const record = ipCache.get(ip) ?? { count: 0, lockUntil: 0 };
 
@@ -85,11 +102,11 @@ export const auth = betterAuth({
         // console.log('path', path)
         // console.log(`${ip} IP attempt: ${record.count}`);
 
-        if (path.includes('/email-otp')) {
+        if (path.includes("/email-otp")) {
           maxAttempts = 3;
           lockDuration = 300000; // 5 minutos
         }
-        if (path.includes('/sign-in/email')) {
+        if (path.includes("/sign-in/email")) {
           maxAttempts = 5;
           lockDuration = 60000; // 1 minuto
         }
@@ -120,7 +137,7 @@ export const auth = betterAuth({
       allowedAttempts: 3,
       expiresIn: 300, //segundos de validez del código OTP, 300 -> 5 minutos
 
-      async sendVerificationOTP({ email, otp, type }, request) {
+      async sendVerificationOTP({ email, otp, type }, _request) {
         if (type === "forget-password") {
           await transporter.sendMail({
             from: process.env.GMAIL_USER,
@@ -142,10 +159,11 @@ export const auth = betterAuth({
     customSession(async ({ user, session }) => {
       // 1. Buscamos el rol en la DB usando el ID del rol que ya tiene el usuario
       // Usamos findUnique porque 'level' es @unique en tu esquema
-      const currentRole = hasUserRol(user) ? user.userRol : 1; // 1 es tu @default(1) en Prisma TIPADO USERROL
+      const currentRole = hasUserRol(user) ? user.userRol : 1;
       const roleData = await prisma.role.findUnique({
-        where: { level: currentRole }
+        where: { level: currentRole },
       });
+      const currentUrlSearch = hasUrlSearch(user) ? user.urlSearch : null;
 
       return {
         session,
@@ -153,10 +171,10 @@ export const auth = betterAuth({
           ...user,
           userRol: currentRole, // <--- Esto añade el campo userRol al JSON final
           roleName: roleData?.name || "Unexpected Rol", // 2. Inyectamos el nombre del rol dinámicamente
-          // urlSearch: (user as any).urlSearch as string,
+          urlSearch: currentUrlSearch,
         },
       };
     }),
     nextCookies(),
-  ]
-})
+  ],
+});

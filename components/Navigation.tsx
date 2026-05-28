@@ -9,9 +9,11 @@ import { useEffect, useState } from "react";
 import { IoMdSunny, IoIosMoon } from "react-icons/io";
 
 import { useAuth } from "@/providers/AuthProvider";
+import { useData } from "@/providers/DataProvider";
 
 export default function Navigation() {
-  const { userSession, dato, setDato } = useAuth();
+  const { userSession } = useAuth();
+  const { setDato, dato } = useData();
   console.log(
     "userId:",
     userSession?.user.id,

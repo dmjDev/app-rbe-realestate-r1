@@ -16,11 +16,17 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   userRol           Int       @default(1)
+  phone             String?
+  urlSearch         String?
 
   // Vinculación con la tabla Role, cada usuario tiene un rol específico
   role              Role      @relation(fields: [userRol], references: [level])
 
   // DATOS Y VICULACION DE USER CON OTRAS COLECCIONES
+  items             Items[]
+  isaved            ItemsSaved[]
+  msgClient         ItemChats[] @relation("ClientMessages")
+  msgManager        ItemChats[] @relation("ManagerMessages")
 
   // VICULACION DE USER CON OTRAS COLECCIONES RELACIONADAS A LA AUTENTICACION, 
   // con esta entrada al consultar la colección se puede tener acceso a datos de User
@@ -90,4 +96,225 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+// CMS Porperties
+model Items {
+  id                String        @id @default(cuid())
+  managerId         String
+  itemName          String
+  itemDescription   String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  itemRef           String        @unique
+  active            Boolean       @default(true)
+  homePromo         Boolean       @default(false)
+
+  iprops            Property?
+  manager           User          @relation(fields: [managerId], references: [id])
+  isaved            ItemsSaved[]
+  ichats            ItemChats[]
+
+  @@map("items")
+}
+
+model Property {
+  id                    String         @id @default(cuid())
+  itemId                String         @unique
+  isOwner               Boolean        @default(false)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  
+  // Operación básica
+  operType              OperationType   // ENUM
+  propType              PropertyType    // ENUM
+  price                 Float?
+  priceMin              Float?
+  frequencyPay          FrequencyPay?   // ENUM, solo para alquileres
+  isNewDevelopment      Boolean        @default(false)
+  builtYear             Int?
+  
+  // Ubicación (Campos para filtros de Idealista)
+  province              String
+  municipality          String
+  neighborhood          String?
+  streetName            String?
+  streetNumber          String?
+  floor                 String?
+  isExterior            Boolean        @default(true)
+  showAddress           Boolean        @default(false)
+  orientation           Orientation?    // ENUM
+
+  // Coordenadas (Para PostGIS)
+  latitude              Float?
+  longitude             Float?
+
+  // Superficie y estancias
+  builtSize             Float?
+  usefulSize            Float?
+  rooms                 Int?
+  bathrooms             Int?
+  
+  // Tipo de suelo
+  flooringMaterial         FlooringType?  // ENUM
+
+  // Características extra
+  hasLift               Boolean        @default(false)
+  hasGarden             Boolean        @default(false)
+  hasPool               Boolean        @default(false)
+  hasTerrace            Boolean        @default(false)
+  hasBalcony            Boolean        @default(false)
+  hasStorageRoom        Boolean        @default(false)
+  hasGarage             Boolean        @default(false)
+  isFurnished           Boolean        @default(false)
+  floatingFloor         Boolean        @default(false)
+  centralHeating        Boolean        @default(false)
+  underfloorHeating     Boolean        @default(false)
+  ductedAirc            Boolean        @default(false)
+  splitsAirc            Boolean        @default(false)
+  climalitWindow        Boolean        @default(false)
+  thermalBridgeWindow   Boolean        @default(false)
+  electricBlinds        Boolean        @default(false)
+  premiumAppliance      Boolean        @default(false)
+  seaSight              Boolean        @default(false)
+  mountainSight         Boolean        @default(false)
+  culturalSight         Boolean        @default(false)
+  commonRooms           Boolean        @default(false)
+  commonPool            Boolean        @default(false)
+  commonGym             Boolean        @default(false)
+  padelArea             Boolean        @default(false)
+  childrenArea          Boolean        @default(false)
+  socialArea            Boolean        @default(false)
+  goalkeeper            Boolean        @default(false)
+  securityCameras       Boolean        @default(false)
+  alarm                 Boolean        @default(false)
+  accesibility          Boolean        @default(false)
+  
+  // Certificado Energético
+  energyRating          EnergyRating   @default(PENDING)  // ENUM
+  emissionsRating       EnergyRating   @default(PENDING)  // ENUM
+
+  // Multimedia
+  imgUrl                Json?
+  videoUrl              String?
+  virtualTourUrl        String?
+
+  // Gestión
+  communityCosts        Float?
+  annualTax             Float?
+
+  item                  Items          @relation(fields: [itemId], references: [id])
+
+  @@map("properties")
+}
+
+model ItemsSaved {
+  id                String    @id @default(cuid())
+  itemId            String
+  clientId          String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  state             String    @default("visited") // like, likeVisited o visited
+
+  item              Items     @relation(fields: [itemId], references: [id])
+  client            User      @relation(fields: [clientId], references: [id])
+
+  @@map("itemssaved")
+}
+
+model ItemChats {
+  id                String    @id @default(cuid())
+  itemId            String
+  clientId          String?
+  managerId         String?
+  message           String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  item              Items     @relation(fields: [itemId], references: [id])
+  client            User?     @relation("ClientMessages", fields: [clientId], references: [id])
+  manager           User?     @relation("ManagerMessages", fields: [managerId], references: [id])
+  
+  @@map("itemchats")
+}
+
+
+
+
+// ENUMS PROPERTY -----------------------------------------------------------------
+enum OperationType {
+  SALE
+  RENT
+  RENT_TO_BUY
+  HOLIDAY_RENT
+  LIFE_ESTATE
+  SHARE
+  TRANSFER
+}
+
+enum PropertyType {
+  FLAT
+  APARTMENT
+  PENTHOUSE
+  DUPLEX
+  STUDIO
+  TERRACED_HOUSES
+  DETACHED_CHALETS
+  VILLAS
+  COTTAGE
+  BUNGALOW
+  LOFT
+  ROOMS
+  COMMERCIAL_PROPERTIES
+  GARAGES
+  STORAGE_ROOMS
+  LAND
+  OFFICES
+  BUILDINGS
+}
+
+enum EnergyRating {
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  PENDING
+}
+
+enum Orientation {
+  N
+  NE
+  E
+  SE
+  S
+  SO
+  O
+  NO
+}
+
+enum FlooringType {
+  HARDWOOD         // Parqué / Madera maciza
+  LAMINATE         // Laminado
+  VINYL            // Vinílico (LVT)
+  CERAMICTILE      // Baldosa cerámica
+  PORCELAINTILE    // Gres porcelánico (muy común en obra nueva)
+  MARBLE           // Mármol
+  GRANITE          // Granito
+  POLISHEDCONCRETE // Cemento pulido / Microcemento
+  TRAVERTINE       // Travertino
+  CARPET           // Moqueta
+  NATURALSTONE     // Piedra natural
+  TERRAZO          // Terrazo
+  BAMBOO           // Bambú (opción ecológica)
+}
+
+enum FrequencyPay {
+  DAILY
+  WEEKLY
+  FORTNIGHTLY
+  MONTHLY
+  ANNUALLY
 }
